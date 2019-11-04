@@ -6,7 +6,6 @@
 /******/
 /******/
 /******/ 		// 将本次加载回来的 chunk 标记为加载完成状态，并执行回调
-/******/ 		// 将本次加载回来的 module 添加到全局的 modules 对象,
 /******/ 		var moduleId, chunkId, i = 0, resolves = [];
 /******/ 		for(;i < chunkIds.length; i++) {
 /******/ 			chunkId = chunkIds[i];
@@ -15,6 +14,7 @@
 /******/ 			}
 /******/ 			installedChunks[chunkId] = 0; // 将chunk标记为加载完成
 /******/ 		}
+/******/    // 将本次加载回来的 module 添加到全局的 modules 对象
 /******/ 		for(moduleId in moreModules) {
 /******/ 			if(Object.prototype.hasOwnProperty.call(moreModules, moduleId)) {
 /******/ 				modules[moduleId] = moreModules[moduleId];
@@ -48,7 +48,7 @@
 /******/ 	}
 /******/
 /******/ 	// 加载模块的方法，即require方法
-/******/ 	function __webpack_require__(moduleId) {
+/******/ 	function __webpack_require__(moduleId) { // import a frome './a.js'  ./src/a.js
 /******/
 /******/ 		// 检查当前的module是否已经存在缓存中
 /******/ 		if(installedModules[moduleId]) {
@@ -71,22 +71,21 @@
 /******/ 		return module.exports;
 /******/ 	}
 /******/
-/******/ 	// This file contains only the entry chunk.
-/******/ 	// The chunk loading function for additional chunks
+/******/ 	// chunk 加载函数，注意只能加载当前入口的chunk文件
 /******/ 	__webpack_require__.e = function requireEnsure(chunkId) {
 /******/ 		var promises = [];
 /******/
 /******/
-/******/ 		// JSONP chunk loading for javascript
+/******/ 		// JSONP方法加载chunk
 /******/
 /******/ 		var installedChunkData = installedChunks[chunkId];
-/******/ 		if(installedChunkData !== 0) { // 0 means "already installed".
+/******/ 		if(installedChunkData !== 0) { // 0 表示已经加载完成
 /******/
-/******/ 			// a Promise means "currently loading".
+/******/ 			// 如果是一个Promise则表示加载中
 /******/ 			if(installedChunkData) {
 /******/ 				promises.push(installedChunkData[2]);
 /******/ 			} else {
-/******/ 				// setup Promise in chunk cache
+/******/ 				// 创建一个回调的Promise，并将Promise缓存到installedChunks中
 /******/ 				var promise = new Promise(function(resolve, reject) {
 /******/ 					installedChunkData = installedChunks[chunkId] = [resolve, reject];
 /******/ 				});
@@ -103,30 +102,30 @@
 /******/ 				}
 /******/ 				script.src = jsonpScriptSrc(chunkId);
 /******/
-/******/ 				// create error before stack unwound to get useful stacktrace later
+/******/ 				// 创建一个error以便在加载错误或者超时时提示
 /******/ 				var error = new Error();
-/******/ 				onScriptComplete = function (event) {
-/******/ 					// avoid mem leaks in IE.
+/******/ 				onScriptComplete = function (event) { // 加载完成回调
+/******/ 					// 避免IE内存泄漏。
 /******/ 					script.onerror = script.onload = null;
-/******/ 					clearTimeout(timeout);
+/******/ 					clearTimeout(timeout); // 关闭超时定时器
 /******/ 					var chunk = installedChunks[chunkId];
-/******/ 					if(chunk !== 0) {
-/******/ 						if(chunk) {
-/******/ 							var errorType = event && (event.type === 'load' ? 'missing' : event.type);
-/******/ 							var realSrc = event && event.target && event.target.src;
-/******/ 							error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')';
-/******/ 							error.name = 'ChunkLoadError';
-/******/ 							error.type = errorType;
-/******/ 							error.request = realSrc;
-/******/ 							chunk[1](error);
+/******/ 					if(chunk !== 0) { // 未加载完成
+/******/ 						if(chunk) { // 加载中
+/******/ 							var errorType = event && (event.type === 'load' ? 'missing' : event.type); // 错误类型
+/******/ 							var realSrc = event && event.target && event.target.src; // 加载的地址
+/******/ 							error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')'; // 错误信息
+/******/ 							error.name = 'ChunkLoadError'; // 错误名称
+/******/ 							error.type = errorType; // 错误类型
+/******/ 							error.request = realSrc; // 请求路径
+/******/ 							chunk[1](error); // 执行 reject 回调
 /******/ 						}
-/******/ 						installedChunks[chunkId] = undefined;
+/******/ 						installedChunks[chunkId] = undefined; // 将当前chunk标记为未加载状态
 /******/ 					}
 /******/ 				};
-/******/ 				var timeout = setTimeout(function(){
+/******/ 				var timeout = setTimeout(function(){ // 设置超时定时器
 /******/ 					onScriptComplete({ type: 'timeout', target: script });
 /******/ 				}, 120000);
-/******/ 				script.onerror = script.onload = onScriptComplete;
+/******/ 				script.onerror = script.onload = onScriptComplete; // 设置加载完成回调
 /******/ 				document.head.appendChild(script);
 /******/ 			}
 /******/ 		}
@@ -139,7 +138,7 @@
 /******/ 	// 导出当前已经缓存的 module
 /******/ 	__webpack_require__.c = installedModules;
 /******/
-/******/ 	// 为 exports 定义 getter 函数
+/******/ 	// 为 exports 定义 getter 函数 （如：实现const定义的常量）
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
 /******/ 		if(!__webpack_require__.o(exports, name)) {
 /******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
@@ -224,23 +223,24 @@ __webpack_require__.r(__webpack_exports__);
 /*! no exports provided */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _a__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./a */ "./src/a.js");
- // 同步加载 这种方式必须把import放在module前面
+        "use strict";
+        __webpack_require__.r(__webpack_exports__);
+        // import a from './a.js'
+        /* harmony import */ var _a__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./a */ "./src/a.js");
+         // 同步加载 这种方式必须把import放在module前面
 
-let mode = {
-  a: _a__WEBPACK_IMPORTED_MODULE_0__["default"],
-  // import 加载方式
-  b: __webpack_require__(/*! ./b.js */ "./src/b.js"),
-  // require 加载方式
-  c: __webpack_require__.e(/*! import() */ 0).then(__webpack_require__.bind(null, /*! ./c.js */ "./src/c.js")) // 动态加载（返回Promise对象） 这种方式可以吧import放在任意地方
+        let mode = {
+          a: _a__WEBPACK_IMPORTED_MODULE_0__["default"],
+          // import 加载方式
+          b: __webpack_require__(/*! ./b.js */ "./src/b.js"),
+          // require 加载方式
+          c: __webpack_require__.e(/*! import() */ 0).then(__webpack_require__.bind(null, /*! ./c.js */ "./src/c.js")) // 动态加载（返回Promise对象） 这种方式可以吧import放在任意地方
 
-};
-console.info(mode);
-mode.a();
-mode.b.default();
-mode.c.then(c => c.default());
+        };
+        console.info(mode);
+        mode.a();
+        mode.b.default();
+        mode.c.then(c => c.default());
 
 /***/ }),
 
