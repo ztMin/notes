@@ -93,7 +93,7 @@ class App extends BaseComponet {
 ```
 
 #### React渲染
-`React`是由`react-dom`提供渲染的方法，分别有：`ReactDOM.render`、`ReactDOM.hydrate`、`ReactDOM.createPortal`
+`React`是由`react-dom`提供渲染的方法，分别有：`ReactDOM.render`、`ReactDOM.hydrate`、`ReactDOM.createPortal`、`ReactDOMServer.renderToString`、`ReactDOMServer.renderToStaticMarkup`、`ReactDOMServer.renderToNodeStream`、`ReactDOMServer.renderToStaticNodeStream`
 ```
 import ReactDOM from 'react-dom';
 import ReactDOMServer from 'react-dom/server';
