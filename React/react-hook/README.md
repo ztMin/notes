@@ -1,6 +1,6 @@
 # 10分钟学会React Hook
 
-Hook 是 React 16.8 的新增特性，让你在不编写 class 的情况下使用 state 以及其他的 React 特性。目前官方没有计划从 React 中移除 class，但建议再新的组件中尽量使用Hook。
+`Hook`是`React 16.8`的新增特性，让你在不编写`class`的情况下使用`state`以及其他的`React`特性。目前官方没有计划从`React`中移除`class`，但建议再新的组件中尽量使用`Hook`。
 
 ```js
 import React, { useState } from 'react';
@@ -37,11 +37,11 @@ function useScorllTop() {
 
 ## 规则和注意事项
 
-- **不要在普通的 JavaScript 函数中调用 Hook！！！**
+- **不要在普通的JavaScript 函数中调用 Hook！！！**
 - **只在 React 的函数组件最顶层中直接调用 Hook！！！**
-- 可以自定义 Hook，但调用规则还是要遵循上面这两个规则！！！
-- 自定义 Hook 是一个函数，其名称以 “use” 开头，函数内部可以调用其他的 Hook！！！
-- 只有Hook的调用顺序在多次渲染之间保持一致，React 才能正确地将内部 state 和对应的 Hook 进行关联
+- 可以自定义`Hook`，但调用规则还是要遵循上面这两个规则！！！
+- 自定义`Hook`是一个函数，其名称以 “`use`” 开头，函数内部可以调用其他的`Hook`！！！
+- 只有Hook的调用顺序在多次渲染之间保持一致，`React`才能正确地将内部`state`和对应的`Hook`进行关联
 
 ## ESlint检验插件
 
@@ -74,7 +74,7 @@ const [state, setState] = useState(initialState);
 
 ### useEffect
 
-Effect让你在函数组件中执行副作用操作，可以看做`componentDidMount`，`componentDidUpdate` 和 `componentWillUnmount` 这三个生命周期函数的组合。如果某些特定值在两次重渲染之间没有发生变化，你可以通知 React 跳过对 effect 的调用，只要传递数组作为 useEffect 的第二个可选参数即可（不传则每次都会执行，空数组为只执行一次，否则就会用Object.is和前一次比较是否有更新来判断是否执行）
+`Effect`让你在函数组件中执行副作用操作，可以看做`componentDidMount`，`componentDidUpdate` 和 `componentWillUnmount` 这三个生命周期函数的组合。如果某些特定值在两次重渲染之间没有发生变化，你可以通知`React`跳过对`effect`的调用，只要传递数组作为`useEffect`的第二个可选参数即可（不传则每次都会执行，空数组为只执行一次，否则就会用`Object.is`和前一次比较是否有更新来判断是否执行）
 
 ```js
 const [scorllTop, setScorllTop] = useState(0);
@@ -89,7 +89,7 @@ useEffect(() => {
 
 ### useContext
 
-接收一个 context 对象（`React.createContext` 的返回值）并返回该 `context` 的当前值。当组件上层最近的 `<MyContext.Provider>` 更新时，该 Hook 会触发重渲染。
+接收一个`context`对象（`React.createContext` 的返回值）并返回该`context`的当前值。当组件上层最近的 `<MyContext.Provider>` 更新时，该`Hook`会触发重渲染。
 
 ```js
 const ThemeContext = React.createContext({
