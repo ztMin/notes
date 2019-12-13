@@ -14,7 +14,7 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const {createContext, forwardRef, useState, useEffect, useContext, useRef, useMemo, useCallback, useReducer, useImperativeHandle} = React;
+    const {createContext, forwardRef, createFactory, useState, useEffect, useContext, useRef, useMemo, useCallback, useReducer, useImperativeHandle} = React;
 
     // 自定义Hook
     function useScorllTop() {
@@ -58,6 +58,7 @@
             throw new Error();
         }
       }, props.initialCount, init);
+      console.info('app-children', props)
       return (
         <ThemeContext.Provider value={themes.dark}>
           <p>你点击了 {count} 次</p>
@@ -70,8 +71,15 @@
           <ContextHook />
           <CallbackHook />
           <ImperativeHandleHook />
+          <Factory />
         </ThemeContext.Provider>
       );
+    }
+    class Root extends React.PureComponent {
+      render () {
+        console.info('this', this);
+        return (<App {...this.props} />)
+      }
     }
     
     /**---------- useContext Demo Start ----------**/
@@ -150,8 +158,15 @@
     FancyInput = forwardRef(FancyInput);
     /**---------- useImperativeHandle Demo END ----------**/
 
+    let Factorys = createFactory('div');
+    let Factoryss = Factorys({}, 'Factory')
+    console.info('<Factory />', Factorys, Factory)
+    function Factory () {
+      return Factoryss;
+    };
+
     let container = document.getElementById('root'),
-      element = <App container={container} />,
+      element = <Root container={container} />,
       callback = () => console.log('组件渲染完成 | 组件更新完成');
     let app = ReactDOM.render(element, container, callback);
     console.info('app', app, element);
