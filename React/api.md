@@ -133,6 +133,18 @@ React.createElement(
 )
 ```
 
+## cloneElement
+
+以 element 元素为样板克隆并返回新的 React 元素。返回元素的 props 是将新的 props 与原始元素的 props 浅层合并后的结果。新的子元素将取代现有的子元素，而来自原始元素的 key 和 ref 将被保留。
+
+```js
+React.cloneElement(
+  element,
+  [props],
+  [...children]
+)
+```
+
 ## createFactory
 
 用于生成指定类型`React元素`的工厂函数
@@ -149,6 +161,14 @@ Div({}, 'Factory') = React.createElement('div', {}, 'Factory')
 
 ```js
 React.isValidElement(object)
+```
+
+## createContext
+
+创建一个 Context 对象。当 React 渲染一个订阅了这个 Context 对象的组件，这个组件会从组件树中离自身最近的那个匹配的 Provider 中读取到当前的 context 值。
+
+```js
+const MyContext = React.createContext(defaultValue);
 ```
 
 ## Children
@@ -276,3 +296,45 @@ function MyComponent() {
   );
 }
 ```
+
+## Profiler
+
+Profiler 测量渲染一个 React 应用多久渲染一次以及渲染一次的“代价”。 它的目的是识别出应用中渲染较慢的部分，或是可以使用类似 memoization 优化的部分，并从相关优化中获益。
+
+```js
+render(
+  <App>
+    <Profiler id="Navigation" onRender={callback}>
+      <Navigation {...props} />
+    </Profiler>
+    <Main {...props} />
+  </App>
+);
+```
+
+## StrictMode
+
+StrictMode 是一个用来突出显示应用程序中潜在问题的工具。与 Fragment 一样，StrictMode 不会渲染任何可见的 UI。它为其后代元素触发额外的检查和警告。
+
+```js
+import React from 'react';
+
+function ExampleApplication() {
+  return (
+    <div>
+      <Header />
+      <React.StrictMode>
+        <div>
+          <ComponentOne />
+          <ComponentTwo />
+        </div>
+      </React.StrictMode>
+      <Footer />
+    </div>
+  );
+}
+```
+
+## React Hook
+
+[`useState`](https://github.com/ztMin/notes/tree/master/React/react-hook#usestate)、[`useEffect`](https://github.com/ztMin/notes/tree/master/React/react-hook#useEffect)、[`useContext`](https://github.com/ztMin/notes/tree/master/React/react-hook#useContext)、[`useReducer`](https://github.com/ztMin/notes/tree/master/React/react-hook#useReducer)、[`useCallback`](https://github.com/ztMin/notes/tree/master/React/react-hook#useCallback)、[`useMemo`](https://github.com/ztMin/notes/tree/master/React/react-hook#useMemo)、[`useRef`](https://github.com/ztMin/notes/tree/master/React/react-hook#useRef)、[`useImperativeHandle`](https://github.com/ztMin/notes/tree/master/React/react-hook#useImperativeHandle)、[`useLayoutEffect`](https://github.com/ztMin/notes/tree/master/React/react-hook#useLayoutEffect)、[`useDebugValue`](https://github.com/ztMin/notes/tree/master/React/react-hook#useDebugValue) 都是[`React Hook`](https://github.com/ztMin/notes/tree/master/React/react-hook)相关的Api
