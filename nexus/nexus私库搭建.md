@@ -16,6 +16,8 @@
 ### windows安装
 
 下载成功后得到`latest-win64.zip`压缩包文件，然后将文件解压，会得到如下文件目录：
+
+```txt
 ├───nexus-3.19.1-01
 │   ├───.install4j
 │   ├───bin
@@ -29,6 +31,7 @@
 │   ├───public
 │   └───system
 └───sonatype-work
+```
 
 cmd命令工具进入到 */nexus-3.19.1-01/bin 目录，执行 `nexus /run` 便启动nexus项目。用户名: `admin`， 初始密码在`sonatype-work/nexus3/admin.password`文件中。
 
