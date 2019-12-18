@@ -43,7 +43,7 @@ cmd命令工具进入到 */nexus-3.19.1-01/bin 目录，执行 `nexus /run` 便�
 
 ## Nexus使用
 
-1. 浏览器打开`http://localhost:8081/`，点击右上角登录按钮，初次登录会把`admin`账号的密码生成`解压目录所在路径/sonatype-work/nexus3/admin.password`文件下，登录完成后会销毁次文件，所以务必按提示进行设置新密码。提示下图：
+1. 浏览器打开`http://localhost:8081/`，点击右上角登录按钮，初次登录会把`admin`账号的密码生成`解压目录所在路径/sonatype-work/nexus3/admin.password`文件下，登录完成后会销毁次文件，所以务必按提示进行设置新密码。提示如下图：
 ![image](image/login.png?raw=true)
 
 2. 登录后进入仓库管理页面，默认没有`npm`仓库，需要自己进行创建响应的`npm`仓库，如下图：
