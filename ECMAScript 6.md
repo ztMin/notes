@@ -677,7 +677,7 @@ readFileThunk(callback);
 
 ### Generator 函数的异步应用
 
-`Generator` 就是一个异步操作的容器。它的自动执行需要一种机制，当异步操作有了结果，能够自动交回执行权。以下两种方法可以做到这一点：
+`Generator` 就是一个异步操作的容器。它的自动执行需要一种规则，当异步操作有了结果，能够自动交回执行权。以下两种方法可以做到这一点：
 
 1. 回调函数。将异步操作包装成 Thunk 函数，在回调函数里面交回执行权。
 2. Promise 对象。将异步操作包装成 Promise 对象，用then方法交回执行权。
@@ -698,9 +698,9 @@ function run(fn) {  // fn 为一个Generator函数
 }
 var fs = require('fs');
 var thunkify = require('thunkify');
-var readFileThunk = thunkify(fs.readFile);
+var readFileThunk = thunkify(fs.readFile); // 返回的是Thunk函数
 var g = function* (){
-  var f1 = yield readFileThunk('fileA');
+  var f1 = yield readFileThunk('fileA'); // {value: function (callback) { return fs.readFile('fileA', callback) }, done: false}
   var f2 = yield readFileThunk('fileB');
   // ...
   var fn = yield readFileThunk('fileN');
@@ -720,7 +720,7 @@ var readFile = function (fileName){
   });
 };
 var gen = function* (){
-  var f1 = yield readFile('/etc/fstab');
+  var f1 = yield readFile('/etc/fstab'); // {value: Promise, done: false}
   var f2 = yield readFile('/etc/shells');
   console.log(f1.toString());
   console.log(f2.toString());
@@ -805,7 +805,7 @@ const asyncReadFile = async function () {
 // async函数返回一个 Promise 对象，可以使用then方法添加回调函数。当函数执行的时候，一旦遇到await就会先返回，等到异步操作完成，再接着执行函数体内后面的语句。
 asyncReadFile().then(result => {
   console.info('result', result); // {f1, f2}
-})
+}).catch(err => console.info('错误', err))
 
 // await命令后面是一个thenable对象（即定义then方法的对象），那么await会将其等同于 Promise 对象。
 class Sleep {
@@ -852,4 +852,162 @@ const a = async () => {
   await b();
   c(); // b()运行的时候，a()是暂停执行，上下文环境都保存着。一旦b()或c()报错，错误堆栈将包括a()。
 };
+```
+
+## Class
+
+```js
+// 类的基本使用
+class Point { // 类必须使用new调用，否则会报错
+  state = {}; // 实例属性除了定义在constructor()方法里面的this上面，也可以定义在类的最顶层。
+  static defaultProps = {}; // 静态属性
+  #x = 0; // 私有属性，只能在类的内部使用，在类的外部使用，就会报错。
+  static #totallyRandomNumber = 4; // 静态的私有属性，只能在类的内部调用，外部调用就会报错。
+  constructor(x, y) { // 一个类必须有constructor方法，如果没有显式定义，一个空的constructor() {}方法会被默认添加。
+    this.x = x; // #x是私有属性，类之外是读取不到这个属性的。使用时必须带有#一起使用，所以#x和x是两个不同的属性。
+    this.y = y;
+    console.log(new.target === Point); // ES6 为new命令引入了一个new.target属性，该属性一般用在构造函数之中，返回new命令作用于的那个构造函数。需要注意的是，子类继承父类时，new.target会返回子类。
+    return Object.create(null); // constructor方法默认返回实例对象（即this），如果返回一个全新的对象，则是当前返回的对象而非实例对象
+  }
+  static getPrivateX(point) { // 静态方法
+    return point.#x; // 私有属性不限于从this引用，只要是在类的内部，实例也可以引用私有属性。
+  }
+  #sun() {} // 私有方法
+  get #xValue () {return #x} // 私有getter
+  set #xValue (value) {this.#x = value} // 私有setter
+  static #computeRandomNumber() {} // 静态的私有方法，只能在类的内部调用，外部调用就会报错。
+  toValue() { // 类的所有方法都定义在类的prototype属性上面。 所以toValue方法是定义在 prototype 上。 与ES5不一样的是toValue不可以枚举（即Object.keys(Point.prototype)读取不到）
+    return '(' + this.x + ', ' + this.y + ')';
+  }
+}
+typeof Point // "function" (类的数据类型就是函数)
+Point === Point.prototype.constructor // true (类本身就指向构造函数)
+Point(1,2); // Uncaught TypeError: Class constructor Point cannot be invoked without 'new'
+var p1 = new Point(2, 3);
+var p2 = new Point(3, 2);
+p1.__proto__ === p2.__proto__; // true 类的所有实例共享一个原型对象。
+p1.__proto__.printName = function () { return 'Oops' }; // 使用实例的__proto__属性改写原型，会改变“类”的原始定义，影响到所有实例。
+
+// 取值函数（getter）和存值函数（setter）
+class MyClass {
+  constructor(prop, element) {
+    this.prop = prop; // 这里会执行
+    this.element = element;
+  }
+  get prop() {
+    console.log('getter-prop')
+    return this.prop; // 这里会执行死循环，应为读取this.prop会再次触发getter函数
+  }
+  set prop(value) {
+    console.log('setter-prop')
+    this.prop = value; // 这里会执行死循环，为this.prop赋值会再次触发setter函数
+  }
+  get html() {
+    return this.element.innerHTML;
+  }
+  set html(value) {
+    this.element.innerHTML = value;
+  }
+  ['getArea']() {} // 类的属性名，可以采用表达式。
+}
+
+// Class表达式
+const MyClass = class Me { // 这个类的名字是Me，但是Me只在 Class 的内部可用，指代当前类。在 Class 外部，这个类只能用MyClass引用。
+  getClassName() {
+    return Me.name;
+  }
+};
+let inst = new MyClass();
+inst.getClassName() // Me
+Me.name // ReferenceError: Me is not defined
+// 如果类的内部没用到，可以省略Me
+const MyClass = class { /* ... */ };
+// 采用 Class 表达式，可以写出立即执行的 Class。
+let person = new class {
+  constructor(name) {
+    this.name = name;
+  }
+  sayName() {
+    console.log(this.name);
+  }
+}('张三');
+person.sayName(); // "张三"
+
+// Class类的注意点：
+// 1. 严格模式 --> 只要在类或模块之中，就只有严格模式可用，所以不需要使用`use strict`指定运行模式。
+// 2. 不存在提升 --> `ES6`不会把类的声明提升到代码头部。必须保证子类在父类之后定义。
+new Foo(); // ReferenceError
+class Foo {}
+// 3. name属性 --> `name`属性总是返回紧跟在`class`关键字后面的类名。
+Foo.name // "Foo"
+// 4. Generator 方法 --> 如果某个方法之前加上星号（`*`），就表示该方法是一个`Generator`函数。
+class Foo {
+  constructor(...args) {
+    this.args = args;
+  }
+  * [Symbol.iterator]() {
+    for (let arg of this.args) {
+      yield arg;
+    }
+  }
+}
+// 5. this的指向 --> 类的方法内部如果含有this，它默认指向类的实例。但是，必须非常小心，一旦单独使用该方法，很可能报错。
+class Logger {
+  printName(name = 'there') {
+    this.print(`Hello ${name}`);
+  }
+  print(text) {
+    console.log(text);
+  }
+}
+const logger = new Logger();
+const { printName } = logger;
+printName(); // TypeError: Cannot read property 'print' of undefined
+// 解决this指针方法有：
+class Logger {
+  constructor() {
+    this.printName = this.printName.bind(this); // 1. 在构造方法中绑定this
+    this.printName = () => this.print(`Hello ${name}`); // 2. 使用箭头函数
+  }
+}
+function selfish (target) { // 3. 使用Proxy，获取方法的时候，自动绑定this
+  const cache = new WeakMap();
+  const handler = {
+    get (target, key) {
+      const value = Reflect.get(target, key); // 读取出当前方法
+      if (typeof value !== 'function') { // 不是方法的时候直接返回
+        return value;
+      }
+      if (!cache.has(value)) { // 没有缓存的进行缓存处理
+        cache.set(value, value.bind(target));
+      }
+      return cache.get(value);
+    }
+  };
+  const proxy = new Proxy(target, handler);
+  return proxy;
+}
+const logger = selfish(new Logger());
+
+// 静态方法：在一个方法前，加上static关键字，就表示该方法不会被实例继承，而是直接通过类来调用。
+class Foo {
+  static bar() {
+    this.baz(); // 静态方法包含this关键字，这个this指的是类，而不是实例。
+  }
+  static baz() { // 静态方法可以与非静态方法重名。
+    console.log('hello');
+  }
+  baz() {
+    console.log('world');
+  }
+}
+class Bar extends Foo { // 父类的静态方法，可以被子类继承。
+  constructor (...arg) {
+    super(...arg); // 子类必须在constructor方法中调用super方法，否则新建实例时会报错。这是因为子类自己的this对象，必须先通过父类的构造函数完成塑造，得到与父类同样的实例属性和方法，然后再对其进行加工，加上子类自己的实例属性和方法。如果不调用super方法，子类就得不到this对象。
+  }
+  static classMethod() {
+    return super.bar(); // 静态方法也是可以从super对象上调用的。
+  }
+}
+Bar.bar() === Bar.classMethod() // hello
 ```
