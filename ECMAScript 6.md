@@ -53,6 +53,185 @@ function f([z,(x)]) { return x; };
 [(parseInt.prop)] = [3]; // 正确
 ```
 
+## 字符串
+
+- ES6 加强了对 Unicode 的支持，允许采用\uxxxx形式表示一个字符，其中xxxx表示字符的 Unicode 码点。
+- ES6 为字符串添加了遍历器接口，字符串可以被for...of循环遍历。
+- 模板字符串（多行字符串，所有的空格和缩进都会被保留在输出之中，嵌入变量，需要将变量名写在`${}`之中。）
+
+```js
+// JavaScript 表达字符串的 6 种方法。
+'\z' === 'z'  // true
+'\172' === 'z' // true
+'\x7A' === 'z' // true
+'\u007A' === 'z' // true
+'\u{7A}' === 'z' // true
+
+// 遍历器
+for (let codePoint of 'foo') {
+  console.log(codePoint)
+}
+
+// 模板字符串
+`
+  There are <b>${basket.count}</b> items
+   in your basket, <em>${basket.onSale}</em>
+  are on sale!
+`
+
+// 标签模板（字符串模板可以紧跟在一个函数名后面，该函数将被调用来处理这个模板字符串。这被称为“标签模板”功能（tagged template））
+var a = 1, b = 2;
+function temp(literals, ...values) {
+  console.log(arguments); // [["a=", ", b=", ""], 1, 2]
+}
+temp`a=${a}, b=${b}`
+
+// 新增静态方法
+String.fromCodePoint(0x20BB7); // 与ES5的String.fromCharCode()类似，识别码点大于0xFFFF的字符。
+String.raw`Hi\n${2+3}!`; // Hi\\n5! 返回一个斜杠都被转义（即斜杠前面再加一个斜杠）的字符串，往往用于模板字符串的处理方法。
+// 新增的实例方法
+"𠮷".codePointAt(0); // 134071 返回一个十进制值的码点，能够正确处理 4 个字节储存的字符，返回一个字符的码点。
+'\u01D1'.normalize() === '\u004F\u030C'.normalize(); // true 将字符的不同表示方法统一为同样的形式，这称为 Unicode 正规化。
+'Hello world!'.includes('llo', 0); // true 返回布尔值，表示是否找到了参数字符串。 第二个参数，表示开始搜索的位置。
+'Hello world!'.startsWith('ello', 1) // true 返回布尔值，表示参数字符串是否在原字符串的头部。 第二个参数，表示开始搜索的位置。
+'Hello world!'.endsWith('l', 3) // true 返回布尔值，表示参数字符串是否在原字符串的尾部。 第二个参数，表示前n个字符（即对0~3字符进行检索）。
+'x'.repeat(3) // xxx 返回一个新字符串，表示将原字符串重复n次。
+'x'.padStart(4, 'ab') // abax 用于头部补全。第一个参数是字符串补全生效的最大长度，第二个参数是用来补全的字符串（默认为空格）。
+'x'.padEnd(4, 'ab') // 'xaba' 用于尾部补全。第一个参数是字符串补全生效的最大长度，第二个参数是用来补全的字符串（默认为空格）。
+'  abc  '.trimStart() // 'abc  ' 消除头部的空格
+'  abc  '.trimEnd() // '  abc' 消除尾部的空格
+[...'test1test2'.matchAll(/t(e)(st(\d?))/g)] // 方法返回一个正则表达式在当前字符串的所有匹配
+```
+
+## 正则表达式
+
+```js
+/**
+ * ES6在第一个参数为正则的时候也允许使用第二个参数修改修饰符（ES5不允许）
+ * ES6 为正则表达式新增了flags属性，会返回正则表达式的修饰符。
+ */
+new RegExp(/abc/ig, 'i').flags // i
+
+/**
+ * 字符串正则方法
+ * String.prototype.match 调用 RegExp.prototype[Symbol.match]
+ * String.prototype.replace 调用 RegExp.prototype[Symbol.replace]
+ * String.prototype.search 调用 RegExp.prototype[Symbol.search]
+ * String.prototype.split 调用 RegExp.prototype[Symbol.split]
+ */
+// u修饰符
+/^\uD83D/u.test('\uD83D\uDC2A') // false ES6添加u修饰符，含义为“Unicode 模式”，用来正确处理大于\uFFFF的 Unicode 字符。也就是说，会正确处理四个字节的 UTF-16 编码。
+/^\uD83D/u.unicode // true ES6在正则实例对象新增unicode属性，表示是否设置了u修饰符。
+
+// y修饰符 （全局匹配，后一次匹配都从上一次匹配成功的下一个位置开始。不同之处在于，g修饰符只要剩余位置中存在匹配就可，而y修饰符确保匹配必须从剩余的第一个位置开始，这也就是“粘连”的涵义。）
+var s = 'aaa_aa_a';
+var r1 = /a+/g;
+var r2 = /a+/y;
+r1.exec(s) // ["aaa"]
+r2.exec(s) // ["aaa"]
+r1.exec(s) // ["aa"]
+r2.exec(s) // null
+r2.sticky // true 是否设置了y修饰符。
+
+// s修饰符（dotAll模式，即点（dot）代表一切字符。）
+/foo.bar/s.test('foo\nbar') // true
+/foo.bar/s.dotAll // true 表示该正则表达式是否处在dotAll模式。
+
+// 后行断言（ES2018 引入后行断言，V8 引擎 4.9 版（Chrome 62）已经支持。）
+'xyny'.replace(/x(?=y)/g, '_') // _yny 前行断言
+'xyxn'.replace(/x(?!y)/g, '_') // xy_n 前行否定断言
+'xyxn'.replace(/(?<=y)x/g, '_') // xy_n 后行断言（即命中y后面的x，然后再回到左边匹配y）
+'xyxn'.replace(/(?<!y)x/g, '_') // _yxn 后行否定断言
+
+// Unicode 属性类
+/\p{Script=Greek}/u // 匹配一个希腊文字母
+/^\p{Decimal_Number}+$/u // 匹配所有十进制字符
+\p{White_Space} // 匹配所有空格
+[\p{Alphabetic}\p{Mark}\p{Decimal_Number}\p{Connector_Punctuation}\p{Join_Control}] // 匹配各种文字的所有字母，等同于 Unicode 版的 \w
+[^\p{Alphabetic}\p{Mark}\p{Decimal_Number}\p{Connector_Punctuation}\p{Join_Control}] // 匹配各种文字的所有非字母的字符，等同于 Unicode 版的 \W
+/\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F/gu // 匹配 Emoji
+/^\p{Block=Arrows}+$/u // 匹配所有的箭头字符
+
+// 具名组匹配（ES2018 引入了具名组匹配（Named Capture Groups），允许为每一个组匹配指定一个名字，既便于阅读代码，又便于引用。）
+const RE_DATE = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/;
+const matchObj = RE_DATE.exec('1999-12-31');
+const year = matchObj.groups.year; // 1999
+const month = matchObj.groups.month; // 12
+const day = matchObj.groups.day; // 31
+const {groups： {year, month, day}} = RE_DATE.exec('1999-12-31'); // 解构赋值
+'1999-12-31'.replace(RE_DATE, '$<day>/$<month>/$<year>'); // 31/12/1999 引用具名组做字符串替换
+/^(?<word>[a-z]+)-\k<word>$/.test('abc-abc'); // true 正则表达式内部引用具名组来做匹配（ \k<组名> ）
+```
+
+## 数值
+
+```js
+0b10 === 2 === Number('0b10') // true ES6 提供了二进制数值的新的写法（前缀用 0b 或者 0B）
+0o10 === 8 === Number('0o10') // true ES6 提供了八进制数值的新的写法（前缀用 0o 或者 0O）
+Number.isFinite(Infinity) // false 来检查一个数值是否为有限，即不是Infinity。（注意NaN也是返回 false）
+Number.isNaN(NaN) // true 检查一个值是否为NaN
+Number.parseInt('12.34') // 12 与 ES5 的parseInt保持不变
+Number.parseFloat('123.45#') // 123.45 与 ES5 的parseFloat保持不变
+Number.isInteger(25.1) // false 判断一个数值是否为整数。（注意：参数不是数值返回 false）
+Number.EPSILON === Math.pow(2, -52) // true 表示 1 与大于 1 的最小浮点数之间的差。JavaScript 能够表示的最小精度。
+Number.MAX_SAFE_INTEGER // 9007199254740991 JavaScript 能够表达的最大值
+Number.MIN_SAFE_INTEGER // -9007199254740991 JavaScript 能够表达的最小值
+Number.isSafeInteger(Number.MAX_SAFE_INTEGER) // true 判断一个整数是否在最大值和最小值范围之内（注意：不是整数都返回 false）
+Math.trunc(4.9) // 4 除一个数的小数部分，返回整数部分。（注意：空值和无法截取整数的值，返回NaN。）
+Math.sign(-0) // -0 判断一个数到底是正数、负数、还是零。正数，返回+1 \ 负数，返回-1 \ 0，返回0 \ -0，返回-0 \ 其它值，返回NaN
+Math.cbrt('8') // 2 计算一个数的立方根
+Math.clz32(1) // 31 将参数转为 32 位无符号整数的形式，然后返回这个 32 位值里面有多少个前导 0。即： 32 - (int).toString(2).length （这种计算方式0除外）
+Math.imul(2, 4) // 8 Math.imul(a, b)与a * b的结果是相同的，即该方法等同于(a * b)|0的效果（超过 32 位的部分溢出）
+Math.fround(2 ** 24 + 1) === 2 ** 24 // true 返回一个数的32位单精度浮点数形式。数值精度是24个二进制位（1 位隐藏位与 23 位有效位），所以对于 -224 至 224 之间的整数（不含两个端点）
+Math.hypot(3, 4); // 5 返回所有参数（支持多个参数）的平方和的平方根。（3 的平方加上 4 的平方，等于 5 的平方）（注意：只要有一个参数返回 NaN）
+
+// 数相关方法
+Math.expm1(1) // 1.718281828459045 返回 e的x次方 - 1即 Math.exp(x) - 1
+Math.log1p(1) // 0.6931471805599453 返回1 + x的自然对数，即 Math.log(1 + x)。
+Math.log10(2) // 0.3010299956639812 Math.log10(x)返回以 10 为底的x的对数。如果x小于 0，则返回 NaN。即 Math.log(x) / Math.LN10
+Math.log2(3) // 1.584962500721156 Math.log2(x)返回以 2 为底的x的对数。如果x小于 0，则返回 NaN。即 Math.log(x) / Math.LN2
+
+// 双曲函数相关方法
+Math.sinh(x) // 返回x的双曲正弦
+Math.cosh(x) // 返回x的双曲余弦
+Math.tanh(x) // 返回x的双曲正切
+Math.asinh(x) // 返回x的反双曲正弦
+Math.acosh(x) // 返回x的反双曲余弦
+Math.atanh(x) // 返回x的反双曲正切
+
+// 指数运算符
+4 ** 3 ** 2 === 4 ** (3 ** 2) // 262144 ES2016 新增 (即 4 的 （3 的 2 次方） 次方)（注意： 该运算符是右结合，多个指数运算符连用时，是从最右边开始计算的。）
+
+// BigInt（ES2020 引入的大整数数据类型）
+1n === BigInt(1n) // BigInt 类型的数据必须添加后缀n；构造函数必须有参数，而且参数必须可以正常转为数值，下面的用法都会报错。
+var n = 1.1n // 报错 （只用来表示整数，没有位数的限制，任何位数的整数都可以精确表示。）
+0b1101n // 13n 二进制
+0o777n // 511n 八进制
+0xFFn // 255n 十六进制
+42n === 42 // false BigInt 与普通整数是两种值，它们之间并不相等。
+typeof 123n // 'bigint'
+-42n // 正确
++42n // 报错 不能使用正号（+），因为会与 asm.js 冲突。
+BigInt.prototype.toString() // 继承于 Object 对象
+BigInt.prototype.valueOf() // 继承于 Object 对象
+BigInt.prototype.toLocaleString() // 继承于 Number 对象
+BigInt.asUintN(width, BigInt) // 给定的 BigInt 转为 0 到 2的width次方 - 1 之间对应的值。
+BigInt.asIntN(width, BigInt)：// 给定的 BigInt 转为 -2的(width - 1)次方 到 2的(width - 1)次方 - 1 之间对应的值。
+BigInt.parseInt(string[, radix]) // 近似于Number.parseInt()，将一个字符串转换成指定进制的 BigInt。
+Boolean(0n) // false
+Boolean(1n) // true
+Number(1n)  // 1
+String(1n)  // "1"
+0n < 1 // true
+0n < true // true
+0n == 0 // true
+0n == false // true
+0n === 0 // false
+'' + 123n // "123"
+9n / 5n // 1n BigInt 类型的+、-、*和**这四个二元运算符，与 Number 类型的行为一致。除法运算/会舍去小数部分，返回一个整数。
+1n + 1.3 // 报错 BigInt 不能与普通数值进行混合运算。
+```
+
 ## Symbol
 
 `Symbol`是ES6引入的一种新的原始数据类型，它表示独一无二的值。凡是属性名属于`Symbol`类型，就都是独一无二的，可以保证不会与其他属性名产生冲突。
@@ -1001,13 +1180,127 @@ class Foo {
     console.log('world');
   }
 }
-class Bar extends Foo { // 父类的静态方法，可以被子类继承。
+class Bar extends Foo { // 父类的静态方法，可以被子类继承。(ES5 的继承，实质是先创造子类的实例对象this，然后再将父类的方法添加到this上面（Parent.apply(this)）。ES6 的继承机制完全不同，实质是先将父类实例对象的属性和方法，加到this上面（所以必须先调用super方法），然后再用子类的构造函数修改this。)
   constructor (...arg) {
     super(...arg); // 子类必须在constructor方法中调用super方法，否则新建实例时会报错。这是因为子类自己的this对象，必须先通过父类的构造函数完成塑造，得到与父类同样的实例属性和方法，然后再对其进行加工，加上子类自己的实例属性和方法。如果不调用super方法，子类就得不到this对象。
+  }
+  baz() {
+    super.baz(); // 当前调用为实例原型上的方法，如当前函数为静态方法的时候会调用父类的静态方法
   }
   static classMethod() {
     return super.bar(); // 静态方法也是可以从super对象上调用的。
   }
 }
 Bar.bar() === Bar.classMethod() // hello
+
+Object.getPrototypeOf(Bar) === Foo // true -> 可以用来从子类上获取父类。判断一个类是否继承了另一个类。
+```
+
+## Module 语法
+
+ES6 模块加载称为“编译时加载”或者静态加载，即 ES6 可以在编译时就完成模块加载，效率要比 CommonJS 模块的加载方式高。当然，这也导致了没法引用 ES6 模块本身，因为它不是对象。
+ES6 的模块自动采用严格模式，不管你有没有在模块头部加上"use strict";。
+
+### export 命令
+
+模块功能主要由两个命令构成：`export` 和 `import`。`export`命令用于规定模块的对外接口，`import`命令用于输入其他模块提供的功能。
+
+```js
+// 声明的时候导出（不推荐这种写法）
+export var firstName = 'Michael';
+export var lastName = 'Jackson';
+export var year = 1958;
+// 模块底部导出（推荐，这样可以清晰看到模块导出的内容有那些）
+export { firstName, lastName, year };
+// 可以使用as关键字重命名
+export {
+  firstName as FirstName,
+  lastName as LastName,
+  year as Year
+};
+
+// 报错 (第一种写法直接输出 1。只是一个值，不是接口)
+export 1;
+// 报错（通过变量m，还是直接输出 1）
+var m = 1;
+export m;
+// 报错
+function f() {}
+export f;
+// 如果处于块级作用域内，就会报错，因为处于条件代码块之中，就没法做静态优化了，违背了 ES6 模块的设计初衷。
+function foo() {
+  export default 'bar' // SyntaxError
+}
+foo()
+
+// export语句输出的接口，与其对应的值是动态绑定关系，即通过该接口，可以取到模块内部实时的值。
+export var foo = 'bar';
+setTimeout(() => foo = 'baz', 500); // 代码输出变量foo，值为bar，500 毫秒之后变成baz。
+
+// 为模块指定默认输出。（个模块只能有一个默认输出，因此export default命令只能使用一次。）
+export default function () {
+  console.log('foo');
+}
+import customName from './export-default'; // 加载该模块时，可以指定任意名字
+
+// 本质就是输出一个叫做default的变量，然后允许你任意取名字
+export default add; // 等同于 export {add as default};
+import foo from 'modules'; // 等同于 import { default as foo } from 'modules';
+export default var a = 1; // 错误 （因为export default本质就是输出一个叫做default的变量，所以它后面不能跟变量声明语句一起使用。）
+export default 1; // 正确
+```
+
+### import 命令
+
+使用`export`命令定义了模块的对外接口以后，其他`JS`文件就可以通过`import`命令加载这个模块。
+`import`后面的`from`指定模块文件的位置，可以是相对路径，也可以是绝对路径，.js后缀可以省略。如果只是模块名，不带有路径，那么必须有配置文件，告诉 JavaScript 引擎该模块的位置。
+
+```js
+// 加载`profile.js`文件，并从中输入变量。(import命令同样可以使用as关键字重命名变量)
+import { FirstName as firstName, LastName as lastName, Year, obj } from './profile.js';
+
+// import命令输入的变量都是只读，因为它的本质是输入接口。
+obj = {}; // Syntax Error : 'obj' is read-only;
+obj.a = 123; // 合法操作 （比较难查错，不推荐这样操作）
+
+// import命令具有提升效果，会提升到整个模块的头部，首先执行。
+foo();
+import { foo } from 'my_module';
+
+// 报错（import是静态执行，不能使用表达式）
+import { 'f' + 'oo' } from 'my_module';
+// 报错（import是静态执行，不能使用变量）
+let module = 'my_module';
+import { foo } from module;
+// 报错（import不能嵌套在条件模块中执行）
+if (x === 1) {
+  import { foo } from 'module1';
+} else {
+  import { foo } from 'module2';
+}
+
+// import可以只加载模块，不输出任何内容
+import 'lodash'; // 合法操作
+import 'lodash'; // 多次重复执行同一句，只会执行一次，而不会执行多次。
+
+// 可以使用整体加载，即用星号（*）指定一个对象，所有输出值都加载在这个对象上面。
+import * as profile from './profile.js';
+
+// 同时加载默认方法和其他接口
+import _, { each, forEach } from 'lodash';
+
+// 动态按需加载（ES2020提案）
+import(specifier).then(module => console.log(module)) // 运行时加载，可以用在任何地方，返回一个 Promise 对象 与 require 方法的区别是 import() 为异步，require 为同步
+```
+
+### export 与 import 的复合写法
+
+```js
+// export和import语句可以结合在一起。 但需要注意的是，写成一行以后，foo和bar实际上并没有被导入当前模块，只是相当于对外转发了这两个接口，导致当前模块不能直接使用foo和bar。
+export { foo, bar } from 'my_module';
+export { foo as myFoo } from 'my_module'; // 接口改名
+export * from 'my_module'; // 整体输出（注意此命令会忽略my_module的default）
+export { default } from 'foo'; // 默认接口
+export { es6 as default } from './someModule'; // 具名接口改为默认接口
+export { default as es6 } from './someModule'; // 默认接口改名为具名接口
 ```
