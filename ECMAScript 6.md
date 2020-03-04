@@ -232,6 +232,224 @@ String(1n)  // "1"
 1n + 1.3 // 报错 BigInt 不能与普通数值进行混合运算。
 ```
 
+## 函数扩展
+
+```js
+let x = 99;
+function foo(p = x + 1) { // 函数的参数设置默认值（注意：函数不能有同名参数。）
+  // let p = 1; // error 不能用let或const再次声明
+  console.log(p);
+}
+foo() // 100
+x = 100;
+foo() // 101 参数默认值不是传值的，而是每次都重新计算默认值表达式的值。也就是说，参数默认值是惰性求值的。
+// 与解构赋值默认值结合使用
+function foo(a, {x, y = 5} = {}) { // 默认为一个空对象，避免没有传参数的时候解构出错（定义默认值的参数，应是函数的尾参数，否则调用时该参数不能省略。）
+  console.log(x, y);
+}
+foo.length // 1 没有指定默认值的参数个数。（不包括 rest 参数）
+// 作用域
+var x = 1;
+function f(x, y = x) { // 设置参数的默认值，函数进行声明初始化时，参数会形成一个单独的作用域。等到初始化结束，这个作用域就会消失。
+  console.log(y);
+}
+f(2) // 2
+// 应用（指定必传参数，不传则抛出异常）
+function throwIfMissing() {
+  throw new Error('Missing parameter');
+}
+function foo(mustBeProvided = throwIfMissing()) { // 参数的默认值不是在定义时执行，而是在运行时执行。如果参数已经赋值，默认值中的函数就不会运行。
+  return mustBeProvided;
+}
+// rest 参数（形式为...变量名）
+function foo(...args) { // 获取函数的多余参数放入数组中（注意，rest 参数之后不能再有其他参数（即只能是最后一个参数），否则会报错。）
+  'use strict'; // 只要函数参数使用了默认值、解构赋值、或者扩展运算符，那么函数内部就不能显式设定为严格模式，否则会报错。
+}
+foo.name // foo 函数名 (new Function返回的函数实例，name属性的值为anonymous。 bind 返回的函数会加上 bound 前缀)
+/**
+ * 箭头函数
+ * 1. 函数体内的this对象，就是定义时所在的对象，而不是使用时所在的对象。
+ * 2. 不可以当作构造函数，也就是说，不可以使用new命令，否则会抛出一个错误。
+ * 3. 不可以使用arguments对象，该对象在函数体内不存在。如果要用，可以用 rest 参数代替。
+ * 4. 不可以使用yield命令，因此箭头函数不能用作 Generator 函数。
+ */
+var f = v => v; // 等同于 var f = function (v) { return v }
+var f = () => { // 不需要参数或需要多个参数，就使用一个圆括号代表参数部分。
+  console.log(arguments);
+  return 1; // 如果箭头函数的代码块部分多于一条语句，就要使用大括号将它们括起来，并且使用return语句返回。
+}
+var f = id => ({id, name: 'test'}); // 箭头函数直接返回一个对象，必须在对象外面加上括号，否则会报错。
+let fn = () => void 1; // 只有一行语句，且不需要返回值，可以用 viod 写法
+const pipeline = (...funcs) => val => funcs.reduce((a, b) => b(a), val); // 嵌套箭头函数
+let f = x => g(x); // 尾调用 （尾调用由于是函数的最后一步操作，所以不需要保留外层函数的调用帧，因为调用位置、内部变量等信息都不会再用到了，只要直接用内层函数的调用帧，取代外层函数的调用帧。）
+// 尾调用优化只在严格模式下开启，正常模式是无效的。
+function factorial(n, total = 1) { // 尾递归，只保留一个调用记录，复杂度 O(1) 。
+  if (n === 1) return total;
+  return factorial(n - 1, n * total);
+}
+factorial(5) // 120
+// 蹦床函数
+function trampoline(f) {
+  while (f && f instanceof Function) {
+    f = f();
+  }
+  return f;
+}
+function sum(x, y) {
+  if (y > 0) {
+    return sum.bind(null, x + 1, y - 1); // 将原来的递归函数，改写为每一步返回另一个函数。
+  } else {
+    return x;
+  }
+}
+trampoline(sum(1, 100000)) // 使用蹦床函数执行sum，就不会发生调用栈溢出。
+// 尾递归实现
+function tco(f) {
+  var value;
+  var active = false;
+  var accumulated = [];
+  return function accumulator() {
+    accumulated.push(arguments); // [[1, 100000]]
+    if (!active) { // active 的设计保障了只有第一次调用才会进入
+      active = true;
+      while (accumulated.length) {
+        // accumulated.shift() 将前面的结果裁剪出来，f.apply 将下一轮的结果存入到accumulated。因此accumulated的演变如： [[1, 100000]] -> [[2, 99999]] -> [[3, 99998]]
+        value = f.apply(this, accumulated.shift());
+      }
+      active = false;
+      return value;
+    }
+  };
+}
+var sum = tco(function(x, y) {
+  if (y > 0) {
+    return sum(x + 1, y - 1) // 从第二次开始返回的都是 undefined
+  }
+  else {
+    return x
+  }
+});
+sum(1, 100000)
+// ES2017 允许函数定义和调用时参数有尾逗号（trailing comma）
+function foo (a, b,) {}
+foo(a,b,)
+foo.toString() // 返回一模一样的原始代码(不再省略注释和空格)。
+try{} catch {} // ES2019 允许catch语句省略参数。
+```
+
+## 数组
+
+```js
+// 扩展运算符
+console.log(...[1, 2, 3, ...[]]); // 扩展一个空数组，则不产生任何效果。
+console.log((...[1, 2])) // Unexpected token '...' 只有函数调用时，扩展运算符才可以放在圆括号中，否则会报错。
+const [...butLast, last] = [1, 2, 3, 4, 5]; // error 解构扩展运算符必须在最后一位，否则会报错
+// 任何定义了遍历器（Iterator）接口的对象（参阅 Iterator 一章），都可以用扩展运算符转为真正的数组。
+console.log(...new Map([
+  [1, 'one'],
+  [2, 'two']
+])) // [[1, 'one'], [2, 'two']]
+const go = function*(){
+  yield 1;
+  yield 2;
+  yield 3;
+};
+[...go()] // [1, 2, 3]
+Array.from({0: 'a', 1: 'b', length: 2}) // ['a', 'b']  将类似数组的对象（array-like object）和可遍历（iterable）的对象（包括 ES6 的数据结构 Set 和 Map）转为真正的数组
+Array.of(1,2,3) // [1,2,3] 将一组值，转换为数组。
+[1, 2, 3, 4, 5, 6].copyWithin(0, 3, 6) // [4, 5, 6, 4, 5, 6]  当前数组内部，将指定位置的成员复制到其他位置（会覆盖原有成员），然后返回当前数组。
+[1, 4, -5, 10].find((value, index, arr) => value < 0) // -5 用于找出第一个符合条件的数组成员。没有符合条件的成员，则返回undefined。
+[1, 5, 10, 15].findIndex((value, index, arr) => value > 9); // 2 找出第一个符合条件的数组成员的位置，如果所有成员都不符合条件，则返回-1。
+['a', 'b', 'c'].fill(7, 0, 2) // [7, 7, 'c'] // 用给定值，填充一个数组。
+// 数组实例的 entries()，keys() 和 values() 方法都是返回一个遍历器对象。
+[...['a', 'b'].keys()] // [0,1] 对键名的遍历
+[...['a', 'b'].values()] // ['a', 'b'] 对键值的遍历
+[...['a', 'b'].entries()] // [[0,'a'], [1, 'b']] 对键值对的遍历
+[1, 2, 3].includes(2) // true 返回一个布尔值，表示某个数组是否包含给定的值
+[1, [2, [3]]].flat(2) // [1,2,3] 将嵌套的数组“拉平”，变成一维的数组。参数表示想要拉平的层数.
+[2, 3, 4].flatMap((x) => [x, x * 2]) // [2, 4, 3, 6, 4, 8] 相当与先执行map后再执行flat。但只能展开一层数组。第二个参数用来绑定遍历函数里面的this
+[,1][0] === undefined // true ES6则是明确将空位转为undefined。
+```
+
+## 对象
+
+```js
+const foo = 'bar';
+const baz = {
+  foo, // foo: 'bar', ES6 允许直接写入变量和函数，作为对象的属性和方法。
+  ['a' + 'bc']: 123, // abc: 132  ES6允许把表达式放在方括号内。注意：属性名表达式与简洁表示法，不能同时使用，会报错。 如： {[foo]}
+  method() {} // method: function() {} 方法的简写方式（注意，简写的对象方法不能用作构造函数，会报错。）
+};
+// 对象的 可枚举性
+Object.getOwnPropertyDescriptor(baz, 'foo') == {
+  value: 'foo', // 值
+  writable: true, // 值是否可以被改写
+  enumerable: true, // 属性是否可以被枚举出
+  configurable: true // 可以被改变或可被删除时，为true。
+}
+// 属性的遍历方法（所有遍历排序都是按： 数字 -> 字符串 -> Symbol）
+for(let key in baz) // for...in 循环遍历对象自身的和继承的可枚举属性（不含 Symbol 属性）。
+Object.keys(baz) // 返回一个数组，包括对象自身的（不含继承的）所有可枚举属性（不含 Symbol 属性）的键名。
+Object.getOwnPropertyNames(baz) // 返回一个数组，包含对象自身的所有属性（不含 Symbol 属性，但是包括不可枚举属性）的键名。
+Object.getOwnPropertySymbols(baz) // 返回一个数组，包含对象自身的所有 Symbol 属性的键名。
+Reflect.ownKeys(baz) // 返回一个数组，包含对象自身的所有键名，不管键名是 Symbol 或字符串，也不管是否可枚举。
+// super 关键字（只有对象方法的简写法可以让 JavaScript 引擎确认，定义的是对象的方法。）
+const obj = {
+  foo: 'world',
+  find() {
+    return super.foo;
+  }
+};
+Object.setPrototypeOf(obj, {foo: 'hello'}); // 设置obj的原型属性和方法
+obj.find() // "hello"
+
+// 解构赋值（将目标对象自身的所有可遍历的（enumerable）、但尚未被读取的属性，分配到指定的对象上面。）
+let {x, y, ...z} = {x: 1, y: 2, a: 3, b: 4} // 解构赋值必须是最后一个参数，否则会报错。不能复制继承自原型对象的属性。扩展运算符后面必须是一个变量名
+
+// 扩展运算符
+let n = {...{a: 3, b: 4 }} = Object.assign({}, {a: 3, b: 4 });
+{...true} // {} 如果扩展运算符后面不是对象，则会自动将其转为对象。
+{...'hello'} // {0: "h", 1: "e", 2: "l", 3: "l", 4: "o"}
+let ab = { ...a, ...b }; // 合并两个对象。
+// 扩展运算符的参数对象之中，如果有取值函数get，这个函数是会执行的。
+let aWithXGetter = {
+  ...a,
+  get x() {
+    throw new Error('not throw yet'); // 并不会抛出错误，因为 x 属性只是被定义，但没执行
+  }
+};
+
+// 链判断运算符
+const firstName = message?.body?.user?.firstName || 'default'; // 读取对象内部的某个属性，判断一下该对象是否存在。
+obj?.prop // obj.prop 用法一：对象属性
+obj?.[expr] // obj[expr] 用法二： 对象属性
+func?.(...args) // func() 函数或对象方法的调用
+(a?.b).c // ?.对圆括号外部没有影响，不管a对象是否存在，圆括号后面的.c总是会执行。一般不应该使用圆括号。
+new a?.() // 报错 不可以是构造函数
+a?.`{b}` // 链判断运算符的右侧有模板字符串
+a?.b`{c}`
+super?.() // 链判断运算符的左侧是 super
+super?.foo
+a?.b = c // 链运算符用于赋值运算符左侧
+
+// Null 判断运算符
+const headerText = response?.settings?.headerText ?? 'Hello, world!'; // ?? 和 || 类似。但是 ?? 只有左侧的值为null或undefined时，才会返回右侧的值。
+lhs && middle ?? rhs // 报错 ?? 与 && 和 || 的优先级孰高孰低。如果多个逻辑运算符一起使用，必须用括号表明优先级，否则会报错。
+
+// 新增的方法
+Object.is('1', 1) // false 不会自动转换数据类型
+Object.is({}, {}) // false 与严格比较运算符（===）的行为基本一致。
+Object.is(NaN, NaN) // true 与 === 的区别一
+Object.is(+0, -0) // false 与 === 的区别二
+
+Object.assign(target, source1, source2) // 用于对象的合并，将源对象（source）的所有可枚举属性，复制到目标对象（target）。
+typeof Object.assign(2) // "object" 如果该参数不是对象，则会先转成对象，然后返回。
+Object.assign(undefined) // 报错 undefined和null无法转成对象，所以如果它们作为参数，就会报错。（不是目标对象时不会报错）
+Object.assign({}, 'abc'); // {0: "a", 1: "b", 2: "c"} 源对象除字符串以数组对象形式外（Number、Boolean、null、undefined）都会被忽略（属性名为 Symbol 也会被拷贝）
+
+Object.getOwnPropertyDescriptors({foo: 1, get bar() {return 'abc'}}) // {foo: {value: 1, ...}, bar: {value: 'abc', ...}} 与 getOwnPropertyDescriptor 不同的是它返回整个对象的属性（继承属性除外）的描述对象。
+```
+
 ## Symbol
 
 `Symbol`是ES6引入的一种新的原始数据类型，它表示独一无二的值。凡是属性名属于`Symbol`类型，就都是独一无二的，可以保证不会与其他属性名产生冲突。
