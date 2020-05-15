@@ -1,4 +1,4 @@
-# 10分钟学会React Hook
+# React Hook入门
 
 `Hook`是`React 16.8`的新增特性，让你在不编写`class`的情况下使用`state`以及其他的`React`特性。目前官方没有计划从`React`中移除`class`，但建议再新的组件中尽量使用`Hook`。
 
